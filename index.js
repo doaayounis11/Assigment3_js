@@ -8,70 +8,71 @@ var imageInput = document.getElementById("contactImage");
 var favoriteInput = document.getElementById('checkFav');
 var emergencyInput = document.getElementById('checkEmergency');
 var searchInput = document.getElementById("searchInput");
+var contactList = [];
+var editIndex = null;
 
-let contactList = [];
-let editIndex = null;
-
-window.onload = function() {
-    const storedContacts = localStorage.getItem('contactList');
-    if (storedContacts) {
-        contactList = JSON.parse(storedContacts);
-        renderAll();
-    }
+if (localStorage.getItem("contactList")) {
+    contactList = JSON.parse(localStorage.getItem("contactList"));
 }
+renderAll();
 
-function saveToLocalStorage() {
-    localStorage.setItem('contactList', JSON.stringify(contactList));
-}
-
+// ====== VALIDATION ======
 function validateContact(contact) {
+    let valid = true;
+
     document.getElementById("fullNameError").textContent = "";
     document.getElementById("phoneNumError").textContent = "";
     document.getElementById("emailAddressError").textContent = "";
 
-    var valid = true;
     var namePattern = /^[A-Za-z\s]{2,50}$/;
     if (!namePattern.test(contact.name.trim())) {
-        document.getElementById("fullNameError").textContent = "Name should contain only letters and spaces (2-50 characters).";
+        document.getElementById("fullNameError").textContent = "Name should contain only letters and spaces (2-50 characters)";
         valid = false;
     }
 
     var phonePattern = /^(010|011|012|015)[0-9]{8}$/;
     if (!phonePattern.test(contact.phone.trim())) {
-        document.getElementById("phoneNumError").textContent = "Please enter a valid Egyptian phone number.";
-         Swal.fire({
-            icon: 'warning',
-            title: 'Invalid Name',
-            text: 'Please enter a valid Egyptian phone number (e.g., 01012345678 or +201012345678)'
-        });
+        document.getElementById("phoneNumError").textContent = "Please enter a valid Egyptian phone number";
         valid = false;
     }
 
     var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (contact.email.trim() !== "" && !emailPattern.test(contact.email.trim())) {
-        document.getElementById("emailAddressError").textContent = "Please enter a valid email address.";
-         Swal.fire({
-            icon: 'warning',
-            title: 'Invalid Phone',
-            text: 'Please enter a valid Egyptian phone number (e.g., 01012345678 or +201012345678)'
-        });
+        document.getElementById("emailAddressError").textContent = "Please enter a valid email address";
         valid = false;
     }
 
-     if (editIndex === null && contactList.some(c => c.phone === contact.phone.trim())) {
+    // Check duplicate phone on Add
+    if (editIndex === null && contactList.some(c => c.phone === contact.phone.trim())) {
         Swal.fire({
             icon: 'warning',
             title: 'Duplicate Phone',
             text: 'This phone number is already in your contacts.'
         });
-        return false;
+        valid = false;
+    }
+
+    if (!valid) {
+        let errorText = "";
+        if (document.getElementById("fullNameError").textContent) errorText += document.getElementById("fullNameError").textContent + "<br>";
+        if (document.getElementById("phoneNumError").textContent) errorText += document.getElementById("phoneNumError").textContent + "<br>";
+        if (document.getElementById("emailAddressError").textContent) errorText += document.getElementById("emailAddressError").textContent + "<br>";
+
+        if (errorText) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Input',
+                html: errorText
+            });
+        }
     }
 
     return valid;
 }
 
+// ====== ADD / SAVE CONTACT ======
 function addContact() {
-    let contact = {
+    var contact = {
         name: fullNameInput.value,
         phone: phoneNumInput.value,
         email: emailAddressInput.value,
@@ -84,7 +85,7 @@ function addContact() {
     };
 
     if (imageInput.files && imageInput.files[0]) {
-        let reader = new FileReader();
+        var reader = new FileReader();
         reader.onload = function(e) {
             contact.image = e.target.result;
             saveContact(contact);
@@ -100,31 +101,31 @@ function saveContact(contact) {
 
     const modalElement = document.getElementById('addContactModal'); 
     const modalInstance = bootstrap.Modal.getInstance(modalElement);
-    let action = '';
 
     if (editIndex === null) {
         contactList.push(contact);
-        action = 'added';
+        Swal.fire('Added!', 'Contact has been added.', 'success');
     } else {
         contactList[editIndex] = contact;
-        action = 'updated';
+        Swal.fire('Updated!', 'Contact has been updated.', 'success');
+        editIndex = null;
     }
 
-    saveToLocalStorage();
+    localStorage.setItem("contactList", JSON.stringify(contactList));
     renderAll();
     resetForm();
-    editIndex = null;
     modalInstance.hide();
 }
 
+// ====== RESET FORM ======
 function resetForm() {
-    fullNameInput.value = '';
-    phoneNumInput.value = '';
-    emailAddressInput.value = '';
-    addressInput.value = '';
-    groupInput.value = '';
-    noteInput.value = '';
-    imageInput.value = '';
+    fullNameInput.value = "";
+    phoneNumInput.value = "";
+    emailAddressInput.value = "";
+    addressInput.value = "";
+    groupInput.value = "";
+    noteInput.value = "";
+    imageInput.value = "";
     favoriteInput.checked = false;
     emergencyInput.checked = false;
 
@@ -133,78 +134,81 @@ function resetForm() {
     document.getElementById("emailAddressError").textContent = "";
 }
 
-function editContactHandler(index) {
-    editIndex = index;
-    const contact = contactList[index];
-    fullNameInput.value = contact.name;
-    phoneNumInput.value = contact.phone;
-    emailAddressInput.value = contact.email;
-    addressInput.value = contact.adress;
-    groupInput.value = contact.group;
-    noteInput.value = contact.note;
-    favoriteInput.checked = contact.favorite;
-    emergencyInput.checked = contact.emergency;
-    const modal = new bootstrap.Modal(document.getElementById("addContactModal"));
+// ====== EDIT ======
+function editContactHandler(i) {
+    editIndex = i;
+    var c = contactList[i];
+    fullNameInput.value = c.name;
+    phoneNumInput.value = c.phone;
+    emailAddressInput.value = c.email;
+    addressInput.value = c.adress;
+    groupInput.value = c.group;
+    noteInput.value = c.note;
+    favoriteInput.checked = c.favorite;
+    emergencyInput.checked = c.emergency;
+
+    var modal = new bootstrap.Modal(document.getElementById("addContactModal"));
     modal.show();
 }
 
-function deleteContactHandler(index) {
+// ====== DELETE ======
+function deleteContactHandler(i) {
     Swal.fire({
-        title: 'Are you sure?',
-        text: "You won't be able to revert this!",
-        icon: 'warning',
+        title: "Delete Contact?",
+        text: `Are you sure you want to delete ${contactList[i].name}? This action cannot be undone.`,
+        icon: "warning",
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#607CB2',
-        confirmButtonText: 'Yes, delete it!',
-        cancelButtonText: 'Cancel'}).then((result) => {
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "gray",
+        confirmButtonText: "Yes, delete it!"
+    }).then((result) => {
         if (result.isConfirmed) {
-            contactList.splice(index, 1);
-            saveToLocalStorage();
+            contactList.splice(i, 1);
+            localStorage.setItem("contactList", JSON.stringify(contactList));
             renderAll();
-            Swal.fire('Deleted!', 'Contact has been deleted.', 'success');
+            Swal.fire({
+                title: "Deleted!",
+                text: "The contact has been deleted.",
+                icon: "success"
+            });
         }
     });
 }
 
-function toggleFavorite(index) {
-    contactList[index].favorite = !contactList[index].favorite;
-    saveToLocalStorage();
+// ====== TOGGLE FAVORITE / EMERGENCY ======
+function toggleFavorite(i) {
+    contactList[i].favorite = !contactList[i].favorite;
+    localStorage.setItem("contactList", JSON.stringify(contactList));
+    renderAll();
+}
+function toggleEmergency(i) {
+    contactList[i].emergency = !contactList[i].emergency;
+    localStorage.setItem("contactList", JSON.stringify(contactList));
     renderAll();
 }
 
-function toggleEmergency(index) {
-    contactList[index].emergency = !contactList[index].emergency;
-    saveToLocalStorage();
-    renderAll();
-}
-
+// ====== GET INITIALS ======
 function getInitials(name) {
-    let initials = '';
-    if (name) {
-        const parts = name.trim().split(' ');
-        if (parts.length === 1) {
-            initials = parts[0].charAt(0).toUpperCase();
-        } else {
-            initials = parts[0].charAt(0).toUpperCase() + parts[parts.length - 1].charAt(0).toUpperCase();
-        }
-    }
-    return initials;
+    var parts = name.trim().split(" ");
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return parts[0][0].toUpperCase() + parts[parts.length-1][0].toUpperCase();
 }
 
-function renderCards() {
-    let container = document.getElementById("cardsContainer");
-    let emptyMessage = document.getElementById("emptyMessage");
+// ====== RENDER ======
+function renderAll() {
+    renderCards(contactList);
+    renderFavoriteList();
+    renderEmergencyList();
+    updateHeaderCounts();
+}
+
+// ====== RENDER CARDS ======
+function renderCards(list) {
+    var container = document.getElementById("cardsContainer");
     container.innerHTML = "";
 
-    if (contactList.length === 0) {
-        emptyMessage.style.display = "block";
-        return;
-    }
-    emptyMessage.style.display = "none";
-
-    contactList.forEach((contact, i) => {
-        let initials = getInitials(contact.name);
+    list.forEach((contact, i) => {
+        var initials = getInitials(contact.name);
 
         container.innerHTML += `
         <div class="col-lg-6 d-flex">
@@ -274,9 +278,23 @@ function renderCards() {
     });
 }
 
+// ====== SEARCH ======
+function searchContacts() {
+    var value = searchInput.value.toLowerCase().trim();
+    if (!value) return renderAll();
 
+    var filtered = contactList.filter(c => 
+        c.name.toLowerCase().includes(value) ||
+        c.phone.includes(value) ||
+        c.email.toLowerCase().includes(value)
+    );
+
+    renderCards(filtered);
+}
+
+// ====== FAVORITES / EMERGENCY LIST ======
 function renderFavoriteList() {
-    let container = document.getElementById("favList");
+    var container = document.getElementById("favList");
     container.innerHTML = "";
     let favContacts = contactList.filter(c => c.favorite);
     if (favContacts.length === 0) {
@@ -302,7 +320,7 @@ function renderFavoriteList() {
 }
 
 function renderEmergencyList() {
-    let container = document.getElementById("emergList");
+    var container = document.getElementById("emergList");
     container.innerHTML = "";
     let emergContacts = contactList.filter(c => c.emergency);
     if (emergContacts.length === 0) {
@@ -327,17 +345,11 @@ function renderEmergencyList() {
     });
 }
 
+// ====== HEADER COUNTS ======
 function updateHeaderCounts() {
     document.getElementById("contactNum").textContent = contactList.length;
     document.getElementById("favoriteNum").textContent = contactList.filter(c => c.favorite).length;
     document.getElementById("emergencyNum").textContent = contactList.filter(c => c.emergency).length;
-}
-
-function renderAll() {
-    renderCards();
-    renderFavoriteList();
-    renderEmergencyList();
-    updateHeaderCounts();
 }
 
 
