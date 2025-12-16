@@ -135,11 +135,22 @@
         <form class="contact-form">
           <div class="form-inner">
             <div class="mb-3">
-  <label for="contactImage" class="form-label">
+ <div class="d-flex flex-column justify-content-center align-items-center" style="gap:20px;">
+    <label for="contactImage" class="rounded-circle d-flex justify-content-center align-items-center"
+           style="width:100px;height:100px;background:#007bff;color:white;font-weight:bold;font-size:22px;">
+        <i class="fa-solid fa-user"></i>
+    </label>
 
-  </label>
-  <input type="file" class=" rounded-circle " id="contactImage" accept="image/*">
+    <label for="contactImage" class="custom-file-upload d-flex align-items-center justify-content-center"
+           style="cursor:pointer; background:rgb(227, 230, 231); color:black; padding:8px 15px; border-radius:5px;">
+        <i class="fa-solid fa-upload" style="margin-right:8px;"></i>
+        Change Photo
+    </label>
+
+    <input type="file" id="contactImage" accept="image/*" class="d-none">
 </div>
+
+
 
             <div class="mb-3">
               <label for="fullName" class="form-label">Full Name <span class="text-danger">*</span></label>
