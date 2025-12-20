@@ -14,8 +14,11 @@ var editIndex = null;
 var searchInput=document.getElementById("searchInput");
 var emptyMessage = document.getElementById("emptyMessage");
 //save in localStorage
-var contacts = contacts=JSON.parse(localStorage.getItem("contacts"))?? [];
-renderAll();
+document.addEventListener("DOMContentLoaded", function() {
+    contacts = JSON.parse(localStorage.getItem("contacts")) ?? [];
+    renderAll();
+});
+
 // ====== ADD / SAVE CONTACT ======
 function addContact(){
  contact= {
@@ -25,7 +28,7 @@ function addContact(){
     adress:addressInput.value ,
     group: groupInput.value ,
     note: noteInput.value,
-    image: contactImageInput.value,
+    image: selectedContactImage,
     favorite: checkFavInput.checked,
     emergency: checkEmergencyInput.checked,
  }
@@ -63,6 +66,16 @@ function getInitials(name) {
     }
     return parts[0][0].toUpperCase() + parts[parts.length - 1][0].toUpperCase();
 }
+contactImageInput.addEventListener("change", function () {
+    var file = this.files[0];
+    if (!file) return;
+
+    var reader = new FileReader();
+    reader.onload = function () {
+        selectedContactImage = reader.result;
+    };
+    reader.readAsDataURL(file);
+});
 
 // ====== VALIDATION ======
 function validateContact(contact) {
@@ -301,7 +314,6 @@ function renderFavoriteList() {
     for (var i = 0; i < favContacts.length; i++) {
         let contact = favContacts[i];
         let initials = getInitials(contact.name);
-
         container.innerHTML += `
         <div class="fav-card p-2 mb-2 bg-light rounded d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-2">
